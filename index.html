@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NusaTrade Sim — Trading Simulator Game (PRD v1.0)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+
+    <!-- Tailwind Configuration -->
+    <script src="js/tailwind-config.js"></script>
+
+    <!-- Custom Terminal Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- TOP PERSISTENT SIMULATION DISCLAIMER & ENGINE CONTROLS BAR -->
+    <header class="sticky top-0 z-40 bg-[#080b12]/95 backdrop-blur-md border-b border-gray-800 px-3 sm:px-6 py-2">
+        <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-2">
+            <!-- Left: Brand + Simulation Warning Label (PRD Risk Mitigation) -->
+            <div class="flex items-center gap-3">
+                <button onclick="toggleMobileSidebar()" class="lg:hidden text-gray-400 hover:text-white p-1.5 rounded-lg bg-gray-800/60">
+                    <i class="fa-solid fa-bars text-sm"></i>
+                </button>
+                <div class="flex items-center gap-2 cursor-pointer" onclick="switchView('dashboard')">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <i class="fa-solid fa-chart-line text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold tracking-tight text-white text-sm sm:text-base">NusaTrade<span class="text-emerald-400">Sim</span></span>
+                        <span class="hidden xl:inline-block ml-1.5 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">PRD v1.0</span>
+                    </div>
+                </div>
+
+                <!-- Mandatory Simulation Badge -->
+                <div class="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 px-2.5 py-1 rounded-full text-[11px] font-medium">
+                    <i class="fa-solid fa-shield-halved text-amber-400"></i>
+                    <span class="hidden sm:inline">SIMULASI EDUKASI —</span>
+                    <span class="font-semibold">UANG VIRTUAL (Rp)</span>
+                </div>
+            </div>
+
+            <!-- Center: Active Market Event & Live Simulation Speed Controls -->
+            <div class="flex items-center gap-2 sm:gap-4">
+                <div id="marketEventBadge" class="hidden md:flex items-center gap-2 px-3 py-1 rounded-lg bg-gray-800/90 border border-gray-700 text-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" id="marketPulseDot"></span>
+                    <span class="text-gray-400">Kondisi Pasar:</span>
+                    <span id="currentMarketEventName" class="font-semibold text-emerald-400">Pasar Normal (Stabil)</span>
+                </div>
+
+                <div class="flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5 text-xs font-mono">
+                    <button onclick="setSimSpeed(0)" id="speedBtn0" title="Jeda Simulasi Harga" class="px-2 py-1 rounded-md text-gray-400 hover:text-white transition">
+                        <i class="fa-solid fa-pause"></i>
+                    </button>
+                    <button onclick="setSimSpeed(3500)" id="speedBtn1" title="Kecepatan Normal (1x)" class="px-2 py-1 rounded-md bg-indigo-600 text-white font-semibold transition">1x</button>
+                    <button onclick="setSimSpeed(1800)" id="speedBtn2" title="Kecepatan Cepat (2x)" class="px-2 py-1 rounded-md text-gray-400 hover:text-white transition">2x</button>
+                    <button onclick="setSimSpeed(800)" id="speedBtn5" title="Kecepatan Turbo (5x)" class="px-2 py-1 rounded-md text-gray-400 hover:text-white transition">5x</button>
+                    <button onclick="manualTick()" title="Paksa +1 Perubahan Harga Sekarang" class="ml-1 px-2 py-1 rounded-md bg-gray-800 hover:bg-gray-700 text-emerald-400 border-l border-gray-700 transition">
+                        +1 Tick
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: Quick Cash, Level/XP & Auth Switcher -->
+            <div class="flex items-center gap-3">
+                <div class="hidden sm:flex flex-col items-end">
+                    <span class="text-[10px] uppercase tracking-wider text-gray-400">Saldo Kas Virtual</span>
+                    <span id="headerCashBalance" class="font-mono font-bold text-xs sm:text-sm text-emerald-400">Rp 100.000.000</span>
+                </div>
+
+                <div onclick="switchView('profile')" class="cursor-pointer flex items-center gap-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 px-2.5 py-1.5 rounded-xl transition">
+                    <div id="headerAvatar" class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">
+                        <i class="fa-solid fa-user-astronaut"></i>
+                    </div>
+                    <div class="hidden md:block text-left">
+                        <div class="flex items-center gap-1.5">
+                            <span id="headerUsername" class="text-xs font-semibold text-white">Trader_Nusa</span>
+                            <span id="headerLevelBadge" class="text-[10px] font-mono px-1.5 py-0.2 bg-indigo-500/20 text-indigo-300 rounded border border-indigo-500/40">Lv.1</span>
+                        </div>
+                        <div class="w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden mt-1">
+                            <div id="headerXpBar" class="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 transition-all duration-300" style="width: 15%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="openAuthModal()" title="Kelola Akun / Login / Landing Page" class="p-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 transition text-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-right-left"></i>
+                    <span class="hidden xl:inline">Akun</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- LIVE STOCK TICKER TAPE -->
+    <div class="bg-[#0d1322] border-b border-gray-800/80 overflow-hidden py-1.5 select-none">
+        <div id="liveTickerTape" class="ticker-track gap-6 px-4 text-xs font-mono">
+            <!-- Dynamically populated by JS -->
+        </div>
+    </div>
+
+    <!-- MAIN APP LAYOUT: SIDEBAR + CONTENT AREA -->
+    <div class="flex-1 flex max-w-[1600px] w-full mx-auto relative">
+
+        <!-- DESKTOP & MOBILE SIDEBAR NAVIGATION -->
+        <aside id="appSidebar" class="fixed lg:static inset-y-0 left-0 z-30 w-64 bg-[#0e1424] border-r border-gray-800 flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out pt-14 lg:pt-0">
+            <div class="p-4 space-y-1 overflow-y-auto">
+                <div class="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Menu Utama Trading</div>
+
+                <button onclick="switchView('dashboard')" data-nav="dashboard" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-gauge-high w-5 text-center"></i>
+                        <span>Dashboard</span>
+                    </div>
+                </button>
+
+                <button onclick="switchView('market')" data-nav="market" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-chart-candlestick w-5 text-center"></i>
+                        <span>Market & Trading</span>
+                    </div>
+                    <span class="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded">LIVE</span>
+                </button>
+
+                <button onclick="switchView('portfolio')" data-nav="portfolio" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-briefcase w-5 text-center"></i>
+                        <span>Portofolio</span>
+                    </div>
+                    <span id="navHoldingsCount" class="text-[10px] font-mono bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded">0</span>
+                </button>
+
+                <button onclick="switchView('history')" data-nav="history" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i>
+                        <span>Riwayat Transaksi</span>
+                    </div>
+                </button>
+
+                <div class="pt-4 pb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Gamifikasi & Kompetisi</div>
+
+                <button onclick="switchView('missions')" data-nav="missions" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-bullseye w-5 text-center"></i>
+                        <span>Misi & Pencapaian</span>
+                    </div>
+                    <span id="navMissionsBadge" class="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.5 rounded">0/7</span>
+                </button>
+
+                <button onclick="switchView('leaderboard')" data-nav="leaderboard" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-trophy w-5 text-center"></i>
+                        <span>Leaderboard</span>
+                    </div>
+                </button>
+
+                <button onclick="switchView('profile')" data-nav="profile" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-id-card w-5 text-center"></i>
+                        <span>Profil Pemain</span>
+                    </div>
+                </button>
+
+                <div class="pt-4 pb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Sistem & Info</div>
+
+                <button onclick="switchView('admin')" data-nav="admin" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-sliders w-5 text-center"></i>
+                        <span>Admin Panel</span>
+                    </div>
+                    <span class="text-[10px] font-mono bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded">SYS</span>
+                </button>
+
+                <button onclick="switchView('landing')" data-nav="landing" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-circle-info w-5 text-center"></i>
+                        <span>Tentang & Panduan</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Sidebar Bottom Player Card -->
+            <div class="p-4 border-t border-gray-800 bg-[#0b101d]">
+                <div class="p-3 rounded-xl bg-gradient-to-br from-indigo-950/60 to-gray-900 border border-indigo-500/20 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span id="sidebarPlayerTitle" class="text-indigo-300 font-medium">Novice Trader</span>
+                        <span id="sidebarXpText" class="font-mono text-gray-400">0 / 300 XP</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                        <div id="sidebarXpBar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-300" style="width: 5%"></div>
+                    </div>
+                    <p class="text-[11px] text-gray-400 leading-relaxed">
+                        Selesaikan misi & kelola risiko untuk naik level tanpa risiko uang asli.
+                    </p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Backdrop for Mobile Sidebar -->
+        <div id="sidebarBackdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/60 z-20 hidden lg:hidden"></div>
+
+        <!-- MAIN DYNAMIC VIEW CONTAINER -->
+        <main class="flex-1 p-3 sm:p-6 overflow-y-auto space-y-6 pb-20 lg:pb-8">
+
+            <!-- ==========================================
+                 VIEW 1: LANDING PAGE & GAME OVERVIEW (PRD 6.1)
+                 ========================================== -->
+            <section id="view-landing" class="view-section hidden space-y-6">
+                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-950 via-[#111827] to-emerald-950/60 border border-indigo-500/30 p-6 sm:p-10">
+                    <div class="max-w-3xl space-y-4">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-medium">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                            <span>Financial Simulation & Strategy Game — PRD v1.0</span>
+                        </div>
+                        <h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                            Belajar Strategi Trading Saham & Manajemen Risiko <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">100% Bebas Risiko Finansial</span>
+                        </h1>
+                        <p class="text-gray-300 text-sm sm:text-base leading-relaxed">
+                            Selamat datang di <strong>NusaTrade Simulator</strong>. Setiap pemain menerima modal awal virtual sebesar <strong class="text-emerald-400 font-mono">Rp 100.000.000</strong> untuk menganalisis pergerakan pasar simulasi, mengeksekusi transaksi <em>Buy/Sell</em> dengan perhitungan <em>Cost Basis</em> presisi, menyelesaikan misi edukasi, dan bersaing secara adil di Leaderboard.
+                        </p>
+                        <div class="flex flex-wrap gap-3 pt-2">
+                            <button onclick="switchView('market')" class="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold text-sm transition flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+                                <i class="fa-solid fa-play"></i>
+                                <span>Mulai Trading Sekarang</span>
+                            </button>
+                            <button onclick="switchView('dashboard')" class="px-5 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-semibold text-sm border border-gray-700 transition flex items-center gap-2">
+                                <i class="fa-solid fa-chart-pie"></i>
+                                <span>Buka Dashboard Portofolio</span>
+                            </button>
+                            <button onclick="openAuthModal()" class="px-4 py-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 font-semibold text-sm border border-indigo-500/30 transition flex items-center gap-2">
+                                <i class="fa-solid fa-user-plus"></i>
+                                <span>Buat / Ganti Akun Pemain</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Core Gameplay Loop Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-[#111827] border border-gray-800 rounded-xl p-5 space-y-2">
+                        <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">1</div>
+                        <h3 class="font-bold text-white text-sm">Modal Virtual Rp100 Juta</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed">Setiap akun baru langsung menerima Rp100.000.000 kas virtual. Tidak dapat ditarik dan murni untuk simulasi edukasi.</p>
+                    </div>
+                    <div class="bg-[#111827] border border-gray-800 rounded-xl p-5 space-y-2">
+                        <div class="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold">2</div>
+                        <h3 class="font-bold text-white text-sm">Analisis & Eksekusi Atomik</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed">Pantau grafik harga historis 8 saham fiktif Nusantara, perhatikan volatilitas & biaya transaksi 0,15%, lalu lakukan Buy/Sell.</p>
+                    </div>
+                    <div class="bg-[#111827] border border-gray-800 rounded-xl p-5 space-y-2">
+                        <div class="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold">3</div>
+                        <h3 class="font-bold text-white text-sm">Evaluasi Unrealized & Realized P/L</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed">Sistem menghitung <em>Weighted Average Cost Basis</em>, nilai investasi pasar, dan return portofolio secara real-time.</p>
+                    </div>
+                    <div class="bg-[#111827] border border-gray-800 rounded-xl p-5 space-y-2">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center font-bold">4</div>
+                        <h3 class="font-bold text-white text-sm">Misi, XP & Leaderboard</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed">Raih XP dari kedisiplinan trading & diversifikasi aset (bukan spekulasi semata) dan tingkatkan peringkatmu.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 2: TRADING DASHBOARD (PRD 4.2)
+                 ========================================== -->
+            <section id="view-dashboard" class="view-section space-y-6">
+                <!-- Top Welcome & Quick Action Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                            <span>Trading Dashboard</span>
+                            <span id="dashTitleBadge" class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Novice Trader</span>
+                        </h1>
+                        <p class="text-xs sm:text-sm text-gray-400">Ringkasan performa portofolio virtual, grafik ekuitas, watchlist, dan transaksi terbaru.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="switchView('market')" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold text-xs sm:text-sm transition flex items-center gap-2 shadow-lg shadow-emerald-500/10">
+                            <i class="fa-solid fa-plus-minus"></i>
+                            <span>Beli / Jual Aset</span>
+                        </button>
+                        <button onclick="switchView('missions')" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium text-xs sm:text-sm border border-gray-700 transition flex items-center gap-2">
+                            <i class="fa-solid fa-bullseye text-indigo-400"></i>
+                            <span>Lihat Misi</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4 Core Financial KPI Cards (PRD 4.2 & Section 8 Business Rules) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <!-- Total Portfolio Value -->
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden">
+                        <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+                            <span>Total Nilai Portofolio (Ekuitas)</span>
+                            <i class="fa-solid fa-wallet text-indigo-400"></i>
+                        </div>
+                        <div id="dashTotalEquity" class="font-mono text-xl sm:text-2xl font-bold text-white">Rp 100.000.000</div>
+                        <div class="mt-2 flex items-center justify-between text-[11px] text-gray-400">
+                            <span>Modal Awal: Rp 100.000.000</span>
+                            <span id="dashHoldingsRatio" class="font-mono text-indigo-300">0% Aset</span>
+                        </div>
+                    </div>
+
+                    <!-- Virtual Cash Balance -->
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-5">
+                        <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+                            <span>Saldo Kas Virtual Tersedia</span>
+                            <i class="fa-solid fa-coins text-emerald-400"></i>
+                        </div>
+                        <div id="dashCashBalance" class="font-mono text-xl sm:text-2xl font-bold text-emerald-400">Rp 100.000.000</div>
+                        <div class="mt-2 flex items-center justify-between text-[11px] text-gray-400">
+                            <span>Daya Beli Siap Pakai</span>
+                            <span id="dashCashRatio" class="font-mono text-emerald-300">100% Kas</span>
+                        </div>
+                    </div>
+
+                    <!-- Total Profit / Loss -->
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-5">
+                        <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+                            <span>Total Profit / Loss (Bersih)</span>
+                            <i class="fa-solid fa-scale-balanced text-cyan-400"></i>
+                        </div>
+                        <div id="dashTotalPnL" class="font-mono text-xl sm:text-2xl font-bold text-gray-200">Rp 0</div>
+                        <div class="mt-2 flex items-center justify-between text-[11px] text-gray-400">
+                            <span id="dashUnrealizedMini">Unrealized: Rp 0</span>
+                            <span id="dashRealizedMini">Realized: Rp 0</span>
+                        </div>
+                    </div>
+
+                    <!-- Portfolio Return % -->
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-5">
+                        <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+                            <span>Persentase Return Portofolio</span>
+                            <i class="fa-solid fa-percent text-amber-400"></i>
+                        </div>
+                        <div id="dashReturnPct" class="font-mono text-xl sm:text-2xl font-bold text-gray-200">0.00%</div>
+                        <div class="mt-2 flex items-center justify-between text-[11px] text-gray-400">
+                            <span>Rumus: (Ekuitas - Modal) / Modal</span>
+                            <span id="dashRankMini" class="text-amber-300 font-semibold">Peringkat #4</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Middle Row: Portfolio Growth Chart (Left 2/3) + Watchlist (Right 1/3) -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Portfolio Value Progression Chart -->
+                    <div class="lg:col-span-2 bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                            <div>
+                                <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-chart-area text-indigo-400"></i>
+                                    <span>Grafik Perkembangan Nilai Portofolio</span>
+                                </h2>
+                                <p class="text-xs text-gray-400">Perbandingan nilai total portofolio terhadap modal awal Rp 100.000.000 seiring tick pasar.</p>
+                            </div>
+                            <span id="equityChartStatus" class="text-xs font-mono px-2.5 py-1 rounded-lg bg-gray-800 text-gray-300">Acuan: Rp 100 Jt</span>
+                        </div>
+                        <div class="relative h-60 sm:h-72 w-full bg-[#0b0f19] rounded-xl border border-gray-800/80 p-2">
+                            <canvas id="portfolioEquityCanvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Watchlist Panel -->
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                                        <i class="fa-solid fa-star text-amber-400"></i>
+                                        <span>Watchlist Aset</span>
+                                    </h2>
+                                    <p class="text-xs text-gray-400">Aset pantauan favorit Anda</p>
+                                </div>
+                                <button onclick="switchView('market')" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">+ Tambah</button>
+                            </div>
+                            <div id="dashWatchlistContainer" class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                                <!-- Populated via JS -->
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-gray-800 flex items-center justify-between text-xs text-gray-400">
+                            <span>Tips: Tandai bintang pada minimal 3 aset untuk menyelesaikan misi!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Owned Assets Summary + Recent Transactions -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Owned Assets Snapshot -->
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 class="text-sm sm:text-base font-bold text-white">Aset yang Dimiliki Saat Ini</h2>
+                                <p class="text-xs text-gray-400">Kepemilikan saham aktif & Unrealized P/L</p>
+                            </div>
+                            <button onclick="switchView('portfolio')" class="text-xs text-indigo-400 hover:underline">Detail Portofolio &rarr;</button>
+                        </div>
+                        <div id="dashHoldingsContainer" class="space-y-2.5">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 class="text-sm sm:text-base font-bold text-white">Aktivitas Transaksi Terbaru</h2>
+                                <p class="text-xs text-gray-400">5 transaksi terakhir yang tercatat</p>
+                            </div>
+                            <button onclick="switchView('history')" class="text-xs text-indigo-400 hover:underline">Semua Riwayat &rarr;</button>
+                        </div>
+                        <div id="dashRecentTxContainer" class="space-y-2.5">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 3: MARKET SYSTEM & TRADING TERMINAL (PRD 4.3 & 4.4)
+                 ========================================== -->
+            <section id="view-market" class="view-section hidden space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-white">Bursa Pasar Simulasi & Terminal Trading</h1>
+                        <p class="text-xs sm:text-sm text-gray-400">Pilih aset saham fiktif, analisis histori harga & volatilitas, lalu jalankan transaksi Buy atau Sell.</p>
+                    </div>
+                    <!-- Search & Sector Filter -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass text-gray-500 text-xs absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            <input id="marketSearchInput" oninput="renderMarketList()" type="text" placeholder="Cari simbol / nama..." class="bg-[#111827] border border-gray-700 rounded-xl pl-8 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 w-44 sm:w-56">
+                        </div>
+                        <select id="marketSectorFilter" onchange="renderMarketList()" class="bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-indigo-500">
+                            <option value="ALL">Semua Sektor</option>
+                            <option value="Perbankan">Perbankan</option>
+                            <option value="Teknologi">Teknologi</option>
+                            <option value="Energi">Energi</option>
+                            <option value="Pertambangan">Pertambangan</option>
+                            <option value="Konsumer">Konsumer</option>
+                            <option value="Otomotif">Otomotif</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Main Trading Grid: Asset List (5 cols) + Asset Detail & Order Execution (7 cols) -->
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+
+                    <!-- Left Column: Market Asset Explorer List -->
+                    <div class="xl:col-span-5 bg-[#111827] border border-gray-800 rounded-2xl overflow-hidden">
+                        <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between text-xs font-semibold text-gray-400">
+                            <span>Daftar Aset Saham Fiktif (MVP)</span>
+                            <span>Harga & Perubahan</span>
+                        </div>
+                        <div id="marketAssetList" class="divide-y divide-gray-800/70 max-h-[680px] overflow-y-auto">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Selected Asset Chart + Buy/Sell Order Terminal -->
+                    <div class="xl:col-span-7 space-y-6">
+
+                        <!-- Selected Asset Header & Interactive Chart Card -->
+                        <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-5 space-y-4">
+                            <div class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-800 pb-4">
+                                <div class="flex items-center gap-3">
+                                    <button id="detailWatchlistBtn" onclick="toggleWatchlistSelected()" title="Tambah/Hapus dari Watchlist" class="w-10 h-10 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 transition">
+                                        <i class="fa-solid fa-star"></i>
+                                    </button>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h2 id="detailAssetSymbol" class="text-lg sm:text-xl font-extrabold font-mono text-white">BNUS</h2>
+                                            <span id="detailAssetSector" class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Perbankan</span>
+                                            <span id="detailAssetVolatility" class="text-[11px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 font-mono">Vol: Rendah</span>
+                                        </div>
+                                        <p id="detailAssetName" class="text-xs sm:text-sm text-gray-400">PT Bank Nusantara Terbuka (Simulasi)</p>
+                                    </div>
+                                </div>
+
+                                <div class="text-right">
+                                    <div id="detailAssetPrice" class="font-mono text-xl sm:text-2xl font-bold text-white">Rp 9.450</div>
+                                    <div id="detailAssetChange" class="font-mono text-xs font-semibold text-emerald-400">+Rp 120 (+1.29%)</div>
+                                </div>
+                            </div>
+
+                            <!-- Chart Controls & Metadata -->
+                            <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                <div class="flex items-center gap-4 text-gray-400 font-mono">
+                                    <span>High: <strong id="detailHighPrice" class="text-gray-200">Rp 0</strong></span>
+                                    <span>Low: <strong id="detailLowPrice" class="text-gray-200">Rp 0</strong></span>
+                                    <span>Vol Simulasi: <strong id="detailVolume" class="text-gray-200">0</strong></span>
+                                </div>
+                                <div class="flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5">
+                                    <button onclick="setChartMode('line')" id="chartModeLine" class="px-2.5 py-1 rounded-md bg-indigo-600 text-white font-medium transition">Line Area</button>
+                                    <button onclick="setChartMode('candle')" id="chartModeCandle" class="px-2.5 py-1 rounded-md text-gray-400 hover:text-white transition">Candlestick</button>
+                                </div>
+                            </div>
+
+                            <!-- Price History Canvas -->
+                            <div class="relative h-64 sm:h-72 w-full bg-[#0b0f19] rounded-xl border border-gray-800 p-2">
+                                <canvas id="assetPriceCanvas"></canvas>
+                            </div>
+
+                            <!-- Player's Current Position in this Asset -->
+                            <div class="bg-[#0b0f19] border border-gray-800/90 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                                <div>
+                                    <span class="text-gray-500 block">Unit Dimiliki</span>
+                                    <span id="posOwnedUnits" class="font-mono font-bold text-white">0 Unit</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 block">Harga Rata-rata (Avg)</span>
+                                    <span id="posAvgPrice" class="font-mono font-bold text-gray-200">Rp 0</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 block">Nilai Pasar Aset</span>
+                                    <span id="posMarketValue" class="font-mono font-bold text-indigo-300">Rp 0</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 block">Unrealized P/L</span>
+                                    <span id="posUnrealizedPnL" class="font-mono font-bold text-gray-400">Rp 0 (0.00%)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BUY / SELL EXECUTION PANEL (PRD 4.4) -->
+                        <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-5 space-y-4">
+                            <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+                                <div class="flex gap-2 w-full sm:w-auto">
+                                    <button onclick="setOrderSide('BUY')" id="tabOrderBuy" class="flex-1 sm:w-36 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-emerald-500 text-gray-950 shadow-lg shadow-emerald-500/20 transition">
+                                        <i class="fa-solid fa-arrow-trend-up mr-1"></i> BELI (BUY)
+                                    </button>
+                                    <button onclick="setOrderSide('SELL')" id="tabOrderSell" class="flex-1 sm:w-36 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gray-800 text-gray-300 hover:text-white transition">
+                                        <i class="fa-solid fa-arrow-trend-down mr-1"></i> JUAL (SELL)
+                                    </button>
+                                </div>
+                                <div class="hidden sm:flex items-center gap-2 text-xs text-gray-400">
+                                    <input type="checkbox" id="confirmBeforeTradeToggle" checked class="rounded bg-gray-800 border-gray-700 text-indigo-500 focus:ring-0">
+                                    <label for="confirmBeforeTradeToggle" class="cursor-pointer select-none">Konfirmasi sebelum eksekusi</label>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <!-- Order Input Controls -->
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="text-gray-400" id="orderAvailableLabel">Saldo Kas Tersedia:</span>
+                                        <span id="orderAvailableValue" class="font-mono font-semibold text-emerald-400">Rp 100.000.000</span>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs text-gray-300 font-medium mb-1.5">Jumlah Unit Saham</label>
+                                        <div class="flex items-center">
+                                            <button onclick="adjustOrderUnits(-10)" class="px-3 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-l-xl text-xs font-mono">-10</button>
+                                            <input id="orderUnitsInput" oninput="updateOrderPreview()" type="number" min="1" step="1" value="100" class="w-full bg-[#0b0f19] border-y border-gray-700 py-2.5 px-3 text-center font-mono font-bold text-white text-sm focus:outline-none">
+                                            <button onclick="adjustOrderUnits(10)" class="px-3 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-r-xl text-xs font-mono">+10</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quick Percentage Allocation Buttons -->
+                                    <div class="grid grid-cols-4 gap-2 pt-1">
+                                        <button onclick="setOrderPercentage(0.25)" class="py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-mono text-xs border border-gray-700 transition">25%</button>
+                                        <button onclick="setOrderPercentage(0.50)" class="py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-mono text-xs border border-gray-700 transition">50%</button>
+                                        <button onclick="setOrderPercentage(0.75)" class="py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-mono text-xs border border-gray-700 transition">75%</button>
+                                        <button onclick="setOrderPercentage(1.00)" class="py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-mono font-semibold text-xs border border-indigo-500/30 transition">MAX</button>
+                                    </div>
+                                </div>
+
+                                <!-- Order Cost / Proceeds Summary Box -->
+                                <div class="bg-[#0b0f19] border border-gray-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
+                                    <div class="space-y-2 text-xs">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">Harga Eksekusi Pasar:</span>
+                                            <span id="previewExecPrice" class="font-mono text-gray-200">Rp 0</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">Nilai Bruto (<span id="previewUnitsCount">100</span> unit):</span>
+                                            <span id="previewSubtotal" class="font-mono text-gray-200">Rp 0</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">Biaya Transaksi Simulasi (<span id="previewFeeRate">0.15</span>%):</span>
+                                            <span id="previewFeeAmount" class="font-mono text-amber-400">Rp 0</span>
+                                        </div>
+                                        <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-sm font-bold">
+                                            <span id="previewTotalLabel" class="text-white">Estimasi Total Biaya:</span>
+                                            <span id="previewTotalValue" class="font-mono text-emerald-400">Rp 0</span>
+                                        </div>
+                                    </div>
+
+                                    <div id="orderValidationMessage" class="hidden text-[11px] text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-lg px-2.5 py-1.5"></div>
+
+                                    <button id="submitOrderBtn" onclick="initiateTradeExecution()" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-extrabold text-sm tracking-wide transition shadow-lg shadow-emerald-500/20">
+                                        KONFIRMASI BELI (BUY)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 4: PORTFOLIO MANAGEMENT (PRD 4.5)
+                 ========================================== -->
+            <section id="view-portfolio" class="view-section hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-white">Manajemen Portofolio & Profit/Loss</h1>
+                        <p class="text-xs sm:text-sm text-gray-400">Rincian kepemilikan aset saham, harga rata-rata pembelian (Cost Basis), Unrealized P/L, dan Realized P/L.</p>
+                    </div>
+                    <button onclick="switchView('market')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm transition self-start">
+                        <i class="fa-solid fa-plus mr-1"></i> Tambah Kepemilikan
+                    </button>
+                </div>
+
+                <!-- Portfolio Summary Metrics -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4">
+                        <span class="text-xs text-gray-400">Total Cost Basis (Modal Beli Aset)</span>
+                        <div id="portTotalCostBasis" class="font-mono text-lg sm:text-xl font-bold text-white mt-1">Rp 0</div>
+                    </div>
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4">
+                        <span class="text-xs text-gray-400">Total Nilai Pasar Kepemilikan</span>
+                        <div id="portTotalMarketValue" class="font-mono text-lg sm:text-xl font-bold text-indigo-400 mt-1">Rp 0</div>
+                    </div>
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4">
+                        <span class="text-xs text-gray-400">Unrealized Profit / Loss (Mengambang)</span>
+                        <div id="portTotalUnrealized" class="font-mono text-lg sm:text-xl font-bold text-gray-200 mt-1">Rp 0 (0.00%)</div>
+                    </div>
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4">
+                        <span class="text-xs text-gray-400">Realized Profit / Loss (Telah Terealisasi)</span>
+                        <div id="portTotalRealized" class="font-mono text-lg sm:text-xl font-bold text-gray-200 mt-1">Rp 0</div>
+                    </div>
+                </div>
+
+                <!-- Asset Allocation Bar -->
+                <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-5 space-y-3">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-semibold text-gray-200">Komposisi Alokasi Portofolio (Kas vs Aset Saham)</span>
+                        <span id="portAllocationSummaryText" class="font-mono text-gray-400">100% Kas</span>
+                    </div>
+                    <div id="portAllocationBar" class="w-full h-3.5 rounded-full bg-gray-800 overflow-hidden flex">
+                        <!-- Dynamically rendered segments -->
+                    </div>
+                    <div id="portAllocationLegend" class="flex flex-wrap gap-4 text-xs text-gray-400 pt-1"></div>
+                </div>
+
+                <!-- Holdings Table -->
+                <div class="bg-[#111827] border border-gray-800 rounded-2xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-800 text-[11px] uppercase tracking-wider text-gray-400 bg-[#0d1322]">
+                                    <th class="py-3.5 px-4">Simbol & Nama Aset</th>
+                                    <th class="py-3.5 px-4 text-right">Jumlah Unit</th>
+                                    <th class="py-3.5 px-4 text-right">Harga Rata-rata (Cost Basis)</th>
+                                    <th class="py-3.5 px-4 text-right">Harga Pasar Terkini</th>
+                                    <th class="py-3.5 px-4 text-right">Nilai Investasi</th>
+                                    <th class="py-3.5 px-4 text-right">Unrealized P/L</th>
+                                    <th class="py-3.5 px-4 text-right">Return (%)</th>
+                                    <th class="py-3.5 px-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="portfolioHoldingsTableBody" class="divide-y divide-gray-800/70 text-xs sm:text-sm font-mono">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 5: TRANSACTION HISTORY (PRD 4.9)
+                 ========================================== -->
+            <section id="view-history" class="view-section hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-white">Riwayat Transaksi (Transaction History)</h1>
+                        <p class="text-xs sm:text-sm text-gray-400">Catatan audit lengkap setiap eksekusi Buy & Sell beserta harga, biaya, dan Realized P/L.</p>
+                    </div>
+                    <!-- Filters -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="historyFilterType" onchange="renderTransactionHistory()" class="bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-200">
+                            <option value="ALL">Semua Jenis (BUY & SELL)</option>
+                            <option value="BUY">Hanya BELI (BUY)</option>
+                            <option value="SELL">Hanya JUAL (SELL)</option>
+                        </select>
+                        <select id="historyFilterAsset" onchange="renderTransactionHistory()" class="bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-200">
+                            <option value="ALL">Semua Aset</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-[#111827] border border-gray-800 rounded-2xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-800 text-[11px] uppercase tracking-wider text-gray-400 bg-[#0d1322]">
+                                    <th class="py-3.5 px-4">Waktu & ID</th>
+                                    <th class="py-3.5 px-4">Aset</th>
+                                    <th class="py-3.5 px-4">Jenis</th>
+                                    <th class="py-3.5 px-4 text-right">Jumlah Unit</th>
+                                    <th class="py-3.5 px-4 text-right">Harga Eksekusi</th>
+                                    <th class="py-3.5 px-4 text-right">Biaya Transaksi</th>
+                                    <th class="py-3.5 px-4 text-right">Realized P/L</th>
+                                    <th class="py-3.5 px-4 text-right">Total Nilai Transaksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionHistoryTableBody" class="divide-y divide-gray-800/70 text-xs sm:text-sm font-mono">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 6: MISSIONS & ACHIEVEMENTS (PRD 4.6 & 4.7)
+                 ========================================== -->
+            <section id="view-missions" class="view-section hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-white">Misi Trading & Pencapaian (XP & Badges)</h1>
+                        <p class="text-xs sm:text-sm text-gray-400">XP diberikan berdasarkan aktivitas pembelajaran & pengelolaan risiko yang sehat, tanpa hadiah uang sungguhan.</p>
+                    </div>
+                    <div class="flex items-center gap-3 bg-[#111827] border border-gray-800 px-4 py-2.5 rounded-xl">
+                        <div>
+                            <span class="text-[11px] text-gray-400 block">Level & Total XP Anda</span>
+                            <span id="missionHeaderStats" class="font-mono font-bold text-sm text-indigo-400">Level 1 — 0 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Missions List -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="missionsGridContainer">
+                    <!-- Populated via JS -->
+                </div>
+
+                <!-- Achievements & Unlockable Titles Showcase -->
+                <div class="bg-[#111827] border border-gray-800 rounded-2xl p-5 space-y-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-medal text-amber-400"></i>
+                            <span>Koleksi Badge Pencapaian & Gelar Pemain</span>
+                        </h2>
+                        <p class="text-xs text-gray-400">Klik gelar yang sudah terbuka untuk memasangnya di profil dan Leaderboard Anda.</p>
+                    </div>
+                    <div id="achievementsGridContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 7: LEADERBOARD (PRD 4.8)
+                 ========================================== -->
+            <section id="view-leaderboard" class="view-section hidden space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-white">Peringkat Trader (Leaderboard Simulasi)</h1>
+                        <p class="text-xs sm:text-sm text-gray-400">Seluruh perbandingan menggunakan modal awal yang seragam (Rp 100.000.000) dalam lingkungan simulasi.</p>
+                    </div>
+                    <!-- Category Tabs (PRD 4.8) -->
+                    <div class="flex flex-wrap gap-1.5 bg-[#111827] p-1 rounded-xl border border-gray-800 text-xs">
+                        <button onclick="setLeaderboardTab('returnPct')" id="lbTab-returnPct" class="lb-tab px-3 py-1.5 rounded-lg font-semibold bg-indigo-600 text-white transition">Return (%) Tertinggi</button>
+                        <button onclick="setLeaderboardTab('totalProfit')" id="lbTab-totalProfit" class="lb-tab px-3 py-1.5 rounded-lg font-semibold text-gray-400 hover:text-white transition">Total Profit Virtual</button>
+                        <button onclick="setLeaderboardTab('xp')" id="lbTab-xp" class="lb-tab px-3 py-1.5 rounded-lg font-semibold text-gray-400 hover:text-white transition">XP Tertinggi</button>
+                        <button onclick="setLeaderboardTab('missions')" id="lbTab-missions" class="lb-tab px-3 py-1.5 rounded-lg font-semibold text-gray-400 hover:text-white transition">Misi Terbanyak</button>
+                    </div>
+                </div>
+
+                <div class="bg-[#111827] border border-gray-800 rounded-2xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-800 text-[11px] uppercase tracking-wider text-gray-400 bg-[#0d1322]">
+                                    <th class="py-3.5 px-4 w-16">Rank</th>
+                                    <th class="py-3.5 px-4">Pemain & Gelar</th>
+                                    <th class="py-3.5 px-4 text-center">Level & XP</th>
+                                    <th class="py-3.5 px-4 text-center">Misi Selesai</th>
+                                    <th class="py-3.5 px-4 text-right">Total Nilai Portofolio</th>
+                                    <th class="py-3.5 px-4 text-right">Total Profit Virtual</th>
+                                    <th class="py-3.5 px-4 text-right">Return (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboardTableBody" class="divide-y divide-gray-800/70 text-xs sm:text-sm">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 8: USER PROFILE (PRD 4.1 & 6.10)
+                 ========================================== -->
+            <section id="view-profile" class="view-section hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Profile Identity Editor -->
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-5 space-y-5">
+                        <div class="flex items-center gap-4">
+                            <div id="profileAvatarPreview" class="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-indigo-500/20">
+                                <i class="fa-solid fa-user-astronaut"></i>
+                            </div>
+                            <div>
+                                <h2 id="profileDisplayUsername" class="text-lg font-bold text-white">Trader_Nusa</h2>
+                                <span id="profileDisplayTitle" class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Novice Trader</span>
+                                <p class="text-xs text-gray-400 mt-1" id="profileAccountId">ID Akun: USR-001</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 pt-2 border-t border-gray-800">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Username Unik</label>
+                                <input id="profileUsernameInput" type="text" class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Pilih Avatar Kosmetik</label>
+                                <div class="flex gap-2" id="avatarPickerContainer">
+                                    <button onclick="selectAvatar('fa-user-astronaut', 'bg-indigo-600')" class="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center"><i class="fa-solid fa-user-astronaut"></i></button>
+                                    <button onclick="selectAvatar('fa-dragon', 'bg-emerald-600')" class="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center"><i class="fa-solid fa-dragon"></i></button>
+                                    <button onclick="selectAvatar('fa-bolt', 'bg-amber-600')" class="w-9 h-9 rounded-lg bg-amber-600 text-white flex items-center justify-center"><i class="fa-solid fa-bolt"></i></button>
+                                    <button onclick="selectAvatar('fa-robot', 'bg-cyan-600')" class="w-9 h-9 rounded-lg bg-cyan-600 text-white flex items-center justify-center"><i class="fa-solid fa-robot"></i></button>
+                                    <button onclick="selectAvatar('fa-crown', 'bg-rose-600')" class="w-9 h-9 rounded-lg bg-rose-600 text-white flex items-center justify-center"><i class="fa-solid fa-crown"></i></button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Gelar Pemain Aktif</label>
+                                <select id="profileTitleSelect" onchange="changeActiveTitle(this.value)" class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-xs text-white">
+                                    <!-- Populated via JS -->
+                                </select>
+                            </div>
+
+                            <button onclick="saveProfileChanges()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition">
+                                Simpan Perubahan Profil
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Career Trading Statistics & Reset -->
+                    <div class="lg:col-span-2 bg-[#111827] border border-gray-800 rounded-2xl p-5 flex flex-col justify-between space-y-6">
+                        <div class="space-y-4">
+                            <h2 class="text-base font-bold text-white">Statistik Performa & Progres Level</h2>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                <div class="bg-[#0b0f19] border border-gray-800 rounded-xl p-3.5">
+                                    <span class="text-xs text-gray-400">Level & XP</span>
+                                    <div id="profStatLevel" class="font-mono text-lg font-bold text-indigo-400 mt-1">Lv. 1 (0 XP)</div>
+                                </div>
+                                <div class="bg-[#0b0f19] border border-gray-800 rounded-xl p-3.5">
+                                    <span class="text-xs text-gray-400">Total Transaksi Valid</span>
+                                    <div id="profStatTxCount" class="font-mono text-lg font-bold text-white mt-1">0 Transaksi</div>
+                                </div>
+                                <div class="bg-[#0b0f19] border border-gray-800 rounded-xl p-3.5">
+                                    <span class="text-xs text-gray-400">Total Volume Trading</span>
+                                    <div id="profStatVolume" class="font-mono text-lg font-bold text-emerald-400 mt-1">Rp 0</div>
+                                </div>
+                                <div class="bg-[#0b0f19] border border-gray-800 rounded-xl p-3.5">
+                                    <span class="text-xs text-gray-400">Total Biaya Broker Terbayar</span>
+                                    <div id="profStatFees" class="font-mono text-lg font-bold text-amber-400 mt-1">Rp 0</div>
+                                </div>
+                                <div class="bg-[#0b0f19] border border-gray-800 rounded-xl p-3.5">
+                                    <span class="text-xs text-gray-400">Realized P/L Kumulatif</span>
+                                    <div id="profStatRealized" class="font-mono text-lg font-bold text-gray-200 mt-1">Rp 0</div>
+                                </div>
+                                <div class="bg-[#0b0f19] border border-gray-800 rounded-xl p-3.5">
+                                    <span class="text-xs text-gray-400">Misi Terselesaikan</span>
+                                    <div id="profStatMissions" class="font-mono text-lg font-bold text-cyan-400 mt-1">0 / 7</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-800 flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                                <h3 class="text-xs font-bold text-rose-400 uppercase">Reset Ulang Portofolio Simulasi</h3>
+                                <p class="text-xs text-gray-400">Mengembalikan saldo kas ke Rp 100.000.000 dan mengosongkan riwayat transaksi akun ini.</p>
+                            </div>
+                            <button onclick="openResetConfirmationModal()" class="px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold transition">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Reset Portofolio
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 9: ADMIN PANEL & AUDIT LOG (PRD 4.10)
+                 ========================================== -->
+            <section id="view-admin" class="view-section hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold text-white">Panel Administrator Sistem & Simulasi Pasar</h1>
+                            <p class="text-xs text-amber-200/80">Kelola aset fiktif, parameter volatilitas harga, skenario event pasar, misi, dan lihat Audit Log.</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-mono px-3 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40">ROLE: SYSTEM_ADMIN</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- 1. Market Event & Simulation Parameters Controller -->
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-5 space-y-4">
+                        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-bolt text-amber-400"></i>
+                            <span>Picu Skenario Event Pasar & Parameter</span>
+                        </h2>
+                        <p class="text-xs text-gray-400">Mengubah tren pasar global dan volatilitas harga seluruh atau sebagian sektor aset.</p>
+
+                        <div class="space-y-2">
+                            <button onclick="adminTriggerMarketEvent('NORMAL', 'Pasar Normal (Stabil)', 0, 1.0)" class="w-full text-left px-3.5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-xs flex items-center justify-between transition">
+                                <span><i class="fa-solid fa-scale-balanced text-emerald-400 mr-2"></i> Pasar Normal (Seimbang)</span>
+                                <span class="font-mono text-[10px] text-gray-400">Bias 0.0%</span>
+                            </button>
+                            <button onclick="adminTriggerMarketEvent('BULL', 'Bull Run Nusantara (Optimisme Ekonomi)', 0.008, 1.3)" class="w-full text-left px-3.5 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs text-emerald-300 flex items-center justify-between transition">
+                                <span><i class="fa-solid fa-rocket mr-2"></i> Bull Run Nusantara</span>
+                                <span class="font-mono text-[10px]">+0.8% Drift</span>
+                            </button>
+                            <button onclick="adminTriggerMarketEvent('BEAR', 'Tekanan Inflasi & Koreksi Pasar', -0.008, 1.5)" class="w-full text-left px-3.5 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-xs text-rose-300 flex items-center justify-between transition">
+                                <span><i class="fa-solid fa-triangle-exclamation mr-2"></i> Koreksi Pasar (Bearish)</span>
+                                <span class="font-mono text-[10px]">-0.8% Drift</span>
+                            </button>
+                            <button onclick="adminTriggerMarketEvent('VOLATILE', 'Kejutan Suku Bunga (Volatilitas Tinggi)', 0.001, 2.4)" class="w-full text-left px-3.5 py-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-xs text-indigo-300 flex items-center justify-between transition">
+                                <span><i class="fa-solid fa-wave-square mr-2"></i> Volatilitas Ekstrem (2.4x)</span>
+                                <span class="font-mono text-[10px]">2.4x Vol</span>
+                            </button>
+                        </div>
+
+                        <div class="pt-3 border-t border-gray-800 space-y-2">
+                            <label class="block text-xs text-gray-400">Biaya Transaksi Broker Simulasi (%)</label>
+                            <div class="flex gap-2">
+                                <input id="adminFeeInput" type="number" step="0.05" min="0" max="2" value="0.15" class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-1.5 text-xs font-mono text-white">
+                                <button onclick="adminUpdateFeeRate()" class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Terapkan</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Add New Fictional Stock IPO -->
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-5 space-y-4">
+                        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-building-columns text-emerald-400"></i>
+                            <span>Tambah Aset Saham Fiktif Baru (IPO)</span>
+                        </h2>
+                        <div class="space-y-3 text-xs">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-gray-400 block mb-1">Kode Simbol (4-5 Huruf)</label>
+                                    <input id="adminNewSymbol" type="text" maxlength="5" placeholder="MIS: UNVRX" class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-white font-mono uppercase">
+                                </div>
+                                <div>
+                                    <label class="text-gray-400 block mb-1">Sektor</label>
+                                    <select id="adminNewSector" class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-white">
+                                        <option value="Konsumer">Konsumer</option>
+                                        <option value="Perbankan">Perbankan</option>
+                                        <option value="Teknologi">Teknologi</option>
+                                        <option value="Energi">Energi</option>
+                                        <option value="Pertambangan">Pertambangan</option>
+                                        <option value="Otomotif">Otomotif</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-gray-400 block mb-1">Nama Perusahaan Simulasi</label>
+                                <input id="adminNewName" type="text" placeholder="PT Unilever Nusantara Simulasi Tbk" class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-white">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-gray-400 block mb-1">Harga IPO Awal (Rp)</label>
+                                    <input id="adminNewPrice" type="number" min="100" step="50" value="3500" class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-white font-mono">
+                                </div>
+                                <div>
+                                    <label class="text-gray-400 block mb-1">Volatilitas (0.01 - 0.08)</label>
+                                    <input id="adminNewVolatility" type="number" step="0.005" min="0.01" max="0.08" value="0.025" class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-white font-mono">
+                                </div>
+                            </div>
+                            <button onclick="adminAddAsset()" class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold transition">
+                                + Listing Aset Fiktif ke Market
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Create Custom Mission -->
+                    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-5 space-y-4">
+                        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-flag-checkered text-indigo-400"></i>
+                            <span>Buat Misi Edukasi Baru</span>
+                        </h2>
+                        <div class="space-y-3 text-xs">
+                            <div>
+                                <label class="text-gray-400 block mb-1">Judul Misi</label>
+                                <input id="adminMissionTitle" type="text" placeholder="Kolektor Saham Perbankan" class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="text-gray-400 block mb-1">Deskripsi Target Misi</label>
+                                <input id="adminMissionDesc" type="text" placeholder="Selesaikan minimal 8 transaksi valid" class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-white">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-gray-400 block mb-1">Target Transaksi</label>
+                                    <input id="adminMissionTarget" type="number" min="1" value="8" class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-white font-mono">
+                                </div>
+                                <div>
+                                    <label class="text-gray-400 block mb-1">Reward XP</label>
+                                    <input id="adminMissionXp" type="number" min="50" step="25" value="200" class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-white font-mono">
+                                </div>
+                            </div>
+                            <button onclick="adminCreateMission()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition">
+                                + Tambahkan Misi ke Sistem
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Audit Log Table (PRD 4.10 & Section 7 `audit_logs`) -->
+                <div class="bg-[#111827] border border-gray-800 rounded-2xl p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-sm font-bold text-white">Catatan Audit Administratif & Keamanan (`audit_logs`)</h2>
+                            <p class="text-xs text-gray-400">Seluruh aksi admin, perubahan parameter simulasi, dan validasi transaksi yang ditolak tercatat di sini.</p>
+                        </div>
+                    </div>
+                    <div id="adminAuditLogContainer" class="bg-[#0b0f19] border border-gray-800 rounded-xl p-3 max-h-56 overflow-y-auto space-y-1.5 font-mono text-xs">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MOBILE BOTTOM QUICK NAVIGATION -->
+    <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-[#0d1322]/95 backdrop-blur-md border-t border-gray-800 grid grid-cols-5 py-1.5 px-2 text-[10px]">
+        <button onclick="switchView('dashboard')" class="flex flex-col items-center gap-1 py-1 text-gray-300 hover:text-white">
+            <i class="fa-solid fa-gauge-high text-sm"></i>
+            <span>Dashboard</span>
+        </button>
+        <button onclick="switchView('market')" class="flex flex-col items-center gap-1 py-1 text-emerald-400 font-semibold">
+            <i class="fa-solid fa-chart-candlestick text-sm"></i>
+            <span>Market</span>
+        </button>
+        <button onclick="switchView('portfolio')" class="flex flex-col items-center gap-1 py-1 text-gray-300 hover:text-white">
+            <i class="fa-solid fa-briefcase text-sm"></i>
+            <span>Portofolio</span>
+        </button>
+        <button onclick="switchView('missions')" class="flex flex-col items-center gap-1 py-1 text-gray-300 hover:text-white">
+            <i class="fa-solid fa-bullseye text-sm"></i>
+            <span>Misi</span>
+        </button>
+        <button onclick="switchView('leaderboard')" class="flex flex-col items-center gap-1 py-1 text-gray-300 hover:text-white">
+            <i class="fa-solid fa-trophy text-sm"></i>
+            <span>Rank</span>
+        </button>
+    </nav>
+
+    <!-- ==========================================
+         MODALS: TRADE CONFIRMATION, AUTH/ACCOUNTS, RESET
+         ========================================== -->
+
+    <!-- 1. Trade Order Confirmation Modal -->
+    <div id="tradeConfirmModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-[#111827] border border-gray-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+                <h3 id="modalOrderTitle" class="text-base font-bold text-white">Konfirmasi Transaksi Simulasi</h3>
+                <button onclick="closeTradeConfirmModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="modalOrderSummary" class="bg-[#0b0f19] border border-gray-800 rounded-xl p-4 space-y-2 text-xs font-mono">
+                <!-- Populated dynamically -->
+            </div>
+            <p class="text-[11px] text-gray-400">
+                Transaksi ini menggunakan uang virtual dan akan diproses secara atomik pada harga pasar simulasi saat ini.
+            </p>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeTradeConfirmModal()" class="flex-1 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold text-xs">Batal</button>
+                <button id="modalConfirmExecBtn" onclick="executeConfirmedTrade()" class="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold text-xs">Ya, Jalankan Transaksi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Authentication & Multi-Account Switcher Modal (PRD 4.1) -->
+    <div id="authModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-[#111827] border border-gray-700 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+                <div>
+                    <h3 class="text-base font-bold text-white">Autentikasi & Manajemen Akun Pemain</h3>
+                    <p class="text-xs text-gray-400">Data portofolio tersimpan terpisah berdasarkan akun pemain (PRD 4.1).</p>
+                </div>
+                <button onclick="closeAuthModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Existing Accounts List -->
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-gray-300">Pilih Akun Pemain Tersedia (Klik untuk Login):</label>
+                <div id="accountsListContainer" class="space-y-2 max-h-44 overflow-y-auto pr-1">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- Register New Account -->
+            <div class="pt-4 border-t border-gray-800 space-y-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-400">Registrasi Akun Baru (+Modal Awal Rp 100.000.000)</h4>
+                <div class="flex gap-2">
+                    <input id="newAccountUsername" type="text" placeholder="Masukkan username unik baru..." class="flex-1 bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <button onclick="registerNewAccount()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold text-xs transition">
+                        Daftar & Masuk
+                    </button>
+                </div>
+                <div id="authErrorMsg" class="hidden text-xs text-rose-400"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Reset Portfolio Confirmation Modal -->
+    <div id="resetConfirmModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-[#111827] border border-gray-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <h3 class="text-base font-bold text-white">Reset Portofolio ke Modal Awal?</h3>
+            <p class="text-xs text-gray-300 leading-relaxed">
+                Seluruh kepemilikan aset dan riwayat transaksi pada akun ini akan dihapus, dan saldo kas virtual akan dikembalikan menjadi <strong class="text-emerald-400 font-mono">Rp 100.000.000</strong>.
+            </p>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeResetConfirmationModal()" class="flex-1 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold text-xs">Batal</button>
+                <button onclick="confirmResetPortfolio()" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs">Ya, Reset Sekarang</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-16 lg:bottom-6 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- ==========================================
+         APPLICATION LOGIC & SIMULATION ENGINE
+         ========================================== -->
+
+    <!-- Modular Application Scripts -->
+    <script src="js/state.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
